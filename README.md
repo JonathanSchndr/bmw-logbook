@@ -14,7 +14,6 @@ A self-hosted digital driving logbook for BMW vehicles, compliant with German ta
 - **Multi-vehicle support** – manage multiple BMW vehicles
 - **German Tax Office requirements** – all required fields included
 - **Automatic token refresh** – stays connected without manual intervention
-- **Docker deployment** – easy setup with docker-compose
 - **Dark/light mode**
 
 ---
@@ -33,41 +32,24 @@ A self-hosted digital driving logbook for BMW vehicles, compliant with German ta
 
 ---
 
-## Quick Start (Docker)
-
-```bash
-# Clone the repository
-git clone https://github.com/yourname/bmw-logbook.git
-cd bmw-logbook
-
-# Configure environment
-cp .env.example .env
-# Edit .env and set NUXT_SESSION_SECRET to a random string (min. 32 chars)
-
-# Start all services
-docker compose up -d
-
-# Open in browser
-open http://localhost:3000
-```
-
----
-
-## Manual Setup
+## Quick Start
 
 ### Prerequisites
 
 - Node.js 20+
 - pnpm 10+
-- MongoDB 7.0+
+- MongoDB 7.0+ (provide your own — local install, Atlas, or any MongoDB host)
 - BMW CarData account with active subscriptions
 
 ### Installation
 
 ```bash
+git clone https://github.com/yourname/bmw-logbook.git
+cd bmw-logbook
+
 pnpm install
 cp .env.example .env
-# Configure MONGODB_URI and NUXT_SESSION_SECRET in .env
+# Set MONGODB_URI and NUXT_SESSION_SECRET in .env
 
 pnpm build
 pnpm preview
@@ -341,11 +323,6 @@ Before submitting your logbook to the tax authority, verify:
 **BMW API errors (403/401):**
 - Your access token may have expired – click "Refresh token manually"
 - Check your subscriptions are active in the BMW portal
-
-**Docker issues:**
-- Run `docker compose logs app` to see app errors
-- Run `docker compose logs mongo` to see database errors
-- Run `docker compose down && docker compose up -d` to restart
 
 ---
 

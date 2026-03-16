@@ -64,7 +64,11 @@
           @click="sidebarOpen = !sidebarOpen"
         />
         <div class="flex-1" />
-        <UColorModeToggle />
+        <UButton
+          variant="ghost"
+          :icon="colorMode.value === 'dark' ? 'i-heroicons-sun' : 'i-heroicons-moon'"
+          @click="colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'"
+        />
       </header>
 
       <!-- Page Content -->
@@ -79,6 +83,7 @@
 <script setup lang="ts">
 const route = useRoute()
 const sidebarOpen = ref(false)
+const colorMode = useColorMode()
 
 const { data: unclassifiedCount } = await useFetch('/api/trips', {
   params: { purpose: 'unclassified', limit: 1 },
