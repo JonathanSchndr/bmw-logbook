@@ -1,8 +1,10 @@
 import { createHmac } from 'crypto'
 
 const PUBLIC_PREFIXES = [
-  '/login',           // login page
-  '/api/auth/login',  // login API
+  '/login',            // login page
+  '/api/auth/login',   // login API
+  '/api/auth/logout',  // logout API
+  '/api/auth/status',  // auth status (needed before login)
   '/_nuxt/',          // JS/CSS bundles (needed to render the login page)
   '/__nuxt',          // Nuxt internals
   '/favicon',         // favicon

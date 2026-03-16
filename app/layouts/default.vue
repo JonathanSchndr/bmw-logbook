@@ -69,6 +69,12 @@
           :icon="colorMode.value === 'dark' ? 'i-heroicons-sun' : 'i-heroicons-moon'"
           @click="colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'"
         />
+        <UButton
+          v-if="authStatus?.passwordProtected"
+          variant="ghost"
+          icon="i-heroicons-arrow-right-on-rectangle"
+          @click="logout"
+        />
       </header>
 
       <!-- Page Content -->
@@ -82,8 +88,16 @@
 
 <script setup lang="ts">
 const route = useRoute()
+const router = useRouter()
 const sidebarOpen = ref(false)
 const colorMode = useColorMode()
+
+const { data: authStatus } = await useFetch('/api/auth/status')
+
+async function logout() {
+  await $fetch('/api/auth/logout', { method: 'POST' })
+  router.push('/login')
+}
 
 const { data: unclassifiedCount } = await useFetch('/api/trips', {
   params: { purpose: 'unclassified', limit: 1 },
