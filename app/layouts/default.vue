@@ -9,7 +9,7 @@
       <!-- Logo -->
       <div class="flex items-center gap-3 px-6 py-5 border-b border-gray-200 dark:border-gray-800">
         <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-          <UIcon name="i-heroicons-truck" class="h-5 w-5 text-white" />
+          <UIcon name="i-mdi-car" class="h-5 w-5 text-white" />
         </div>
         <div>
           <h1 class="font-bold text-gray-900 dark:text-white text-sm leading-tight">BMW Logbook</h1>
@@ -28,7 +28,7 @@
             ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
             : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'"
         >
-          <UIcon :name="item.icon" class="h-5 w-5 flex-shrink-0" />
+          <UIcon :name="item.icon" class="h-5 w-5 shrink-0" />
           {{ item.label }}
           <UBadge
             v-if="item.badge"
@@ -98,7 +98,7 @@ const navItems = computed(() => [
     icon: 'i-heroicons-map',
     badge: unclassifiedCount.value || undefined,
   },
-  { to: '/vehicles', label: 'Vehicles', icon: 'i-heroicons-truck' },
+  { to: '/vehicles', label: 'Vehicles', icon: 'i-mdi-car' },
   { to: '/live', label: 'Live Data', icon: 'i-heroicons-signal' },
   { to: '/export', label: 'Export', icon: 'i-heroicons-arrow-down-tray' },
   { to: '/settings', label: 'Settings', icon: 'i-heroicons-cog-6-tooth' },
