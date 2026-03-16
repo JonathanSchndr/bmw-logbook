@@ -230,6 +230,12 @@ export async function reconnectMQTT(): Promise<void> {
           return
         }
 
+        // Log all incoming events for diagnostics
+        for (const [eventName, eventPayload] of dataEntries) {
+          const ep = eventPayload as any
+          console.log(`[MQTT RAW] ${eventName} = ${ep?.value} ${ep?.unit ?? ''}`)
+        }
+
         for (const [eventName, eventPayload] of dataEntries) {
           const ep = eventPayload as any
           const value = ep?.value

@@ -80,6 +80,9 @@
       <UButton size="sm" :disabled="!bulkPurpose" @click="applyBulkClassify">
         Apply
       </UButton>
+      <UButton color="error" variant="soft" size="sm" icon="i-heroicons-trash" :loading="deletingBulk" @click="deleteBulk">
+        Delete
+      </UButton>
       <UButton variant="ghost" size="sm" @click="selectedTripIds.clear()">
         Deselect all
       </UButton>
@@ -107,12 +110,21 @@
             @click.stop
           />
         </div>
-        <div class="pl-10">
+        <div class="pl-10 pr-10">
           <TripCard
             :trip="trip"
             show-classify
             @click="navigateTo(`/trips/${trip._id}`)"
             @classify="(id, purpose) => classifyTrip(id, purpose)"
+          />
+        </div>
+        <div class="absolute right-3 top-3 z-10">
+          <UButton
+            color="error"
+            variant="ghost"
+            icon="i-heroicons-trash"
+            size="xs"
+            @click.stop="deleteTrip(trip._id!)"
           />
         </div>
       </div>
@@ -323,6 +335,35 @@ async function classifyTrip(id: string, purpose: string) {
     toast.add({ title: 'Trip classified', color: 'green' })
   } catch {
     toast.add({ title: 'Failed to classify trip', color: 'red' })
+  }
+}
+
+async function deleteTrip(id: string) {
+  try {
+    await $fetch(`/api/trips/${id}`, { method: 'DELETE' as any })
+    trips.value = trips.value.filter(t => t._id !== id)
+    total.value--
+    selectedTripIds.delete(id)
+    toast.add({ title: 'Trip deleted', color: 'green' })
+  } catch {
+    toast.add({ title: 'Failed to delete trip', color: 'red' })
+  }
+}
+
+const deletingBulk = ref(false)
+
+async function deleteBulk() {
+  if (selectedTripIds.size === 0) return
+  deletingBulk.value = true
+  try {
+    await Promise.all([...selectedTripIds].map(id => $fetch(`/api/trips/${id}`, { method: 'DELETE' as any })))
+    toast.add({ title: `${selectedTripIds.size} trips deleted`, color: 'green' })
+    selectedTripIds.clear()
+    await loadTrips()
+  } catch {
+    toast.add({ title: 'Failed to delete trips', color: 'red' })
+  } finally {
+    deletingBulk.value = false
   }
 }
 
