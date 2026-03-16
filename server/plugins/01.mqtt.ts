@@ -186,7 +186,7 @@ export async function reconnectMQTT(): Promise<void> {
       clean: true,
       reconnectPeriod: 0, // We handle reconnection ourselves
       connectTimeout: 30000,
-      keepalive: 60,
+      keepalive: 25,
       protocolVersion: 4,
     })
 
@@ -295,10 +295,11 @@ export async function reconnectMQTT(): Promise<void> {
 // Auto-reconnect on unexpected disconnect
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 let reconnectAttempts = 0
+let reconnecting = false // prevents two concurrent reconnect attempts
 
 function scheduleReconnect(): void {
-  // Don't stack up timers
-  if (reconnectTimer) return
+  // Don't stack up timers or start while one is already running
+  if (reconnectTimer || reconnecting) return
   // Don't reconnect if a connection attempt is already in progress
   if (mqttState.connecting) return
 
@@ -309,8 +310,9 @@ function scheduleReconnect(): void {
 
   reconnectTimer = setTimeout(async () => {
     reconnectTimer = null
-    if (mqttState.connected) return
+    if (mqttState.connected || reconnecting) return
 
+    reconnecting = true
     console.log('[MQTT] Auto-reconnecting...')
     try {
       await connectDB()
@@ -321,6 +323,8 @@ function scheduleReconnect(): void {
     } catch (err) {
       console.error('[MQTT] Auto-reconnect failed:', err)
       scheduleReconnect()
+    } finally {
+      reconnecting = false
     }
   }, delay)
 }
