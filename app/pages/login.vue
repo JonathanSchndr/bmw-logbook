@@ -9,8 +9,7 @@
       </div>
 
       <UCard>
-        <template #content>
-          <div class="space-y-6 p-2">
+        <div class="space-y-6 p-2">
             <div class="text-center">
               <h1 class="text-xl font-bold text-gray-900 dark:text-white">BMW Logbook</h1>
               <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Enter your password to continue</p>
@@ -39,8 +38,7 @@
                 Sign in
               </UButton>
             </form>
-          </div>
-        </template>
+        </div>
       </UCard>
     </div>
   </div>
