@@ -210,14 +210,33 @@ export async function reconnectMQTT(): Promise<void> {
       })
     })
 
+    // Log first few payloads to diagnose BMW message format
+    let loggedPayloads = 0
+
     client.on('message', async (receivedTopic: string, message: Buffer) => {
       try {
         const payload = message.toString()
-        const data = JSON.parse(payload) as {
-          name: string
-          timestamp: string
-          unit?: string
-          value: string
+        const raw = JSON.parse(payload)
+
+        // Log first 3 payloads to understand the format BMW uses
+        if (loggedPayloads < 3) {
+          console.log('[MQTT] Raw payload sample:', JSON.stringify(raw))
+          loggedPayloads++
+        }
+
+        // BMW CarData can send the event fields either flat or nested under a "data" key
+        // Normalise to { name, value, unit, timestamp }
+        const nested = raw?.data ?? raw
+        const data = {
+          name: nested?.name ?? raw?.name,
+          value: nested?.value ?? raw?.value,
+          unit: nested?.unit ?? raw?.unit,
+          timestamp: nested?.timestamp ?? raw?.timestamp,
+        }
+
+        if (!data.name || data.value === undefined || data.value === null) {
+          console.warn('[MQTT] Skipping message — could not extract name/value. Topic:', receivedTopic, 'Payload:', JSON.stringify(raw))
+          return
         }
 
         const topicParts = receivedTopic.split('/')
@@ -247,17 +266,19 @@ export async function reconnectMQTT(): Promise<void> {
 
         const eventTimestamp = data.timestamp ? new Date(data.timestamp) : new Date()
 
+        const valueStr = String(data.value)
+
         const rawEvent = new RawEventModel({
           vin,
           name: data.name,
           timestamp: eventTimestamp,
           unit: data.unit || '',
-          value: data.value,
+          value: valueStr,
           receivedAt: new Date(),
         })
         await rawEvent.save()
 
-        await processEvent(vin, data.name, data.value, eventTimestamp)
+        await processEvent(vin, data.name, valueStr, eventTimestamp)
       } catch (err) {
         console.error('[MQTT] Error processing message:', err)
       }
