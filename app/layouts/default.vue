@@ -1,0 +1,110 @@
+<template>
+  <UApp>
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <!-- Sidebar Navigation -->
+    <aside
+      class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col"
+      :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+    >
+      <!-- Logo -->
+      <div class="flex items-center gap-3 px-6 py-5 border-b border-gray-200 dark:border-gray-800">
+        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+          <UIcon name="i-heroicons-truck" class="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h1 class="font-bold text-gray-900 dark:text-white text-sm leading-tight">BMW Logbook</h1>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Digital Driving Log</p>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <NuxtLink
+          v-for="item in navItems"
+          :key="item.to"
+          :to="item.to"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
+          :class="isActive(item.to)
+            ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+            : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'"
+        >
+          <UIcon :name="item.icon" class="h-5 w-5 flex-shrink-0" />
+          {{ item.label }}
+          <UBadge
+            v-if="item.badge"
+            :label="String(item.badge)"
+            size="xs"
+            color="red"
+            class="ml-auto"
+          />
+        </NuxtLink>
+      </nav>
+
+      <!-- MQTT Status at bottom -->
+      <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-800">
+        <MqttStatusBadge />
+      </div>
+    </aside>
+
+    <!-- Overlay for mobile -->
+    <div
+      v-if="sidebarOpen"
+      class="fixed inset-0 z-40 bg-black/50 lg:hidden"
+      @click="sidebarOpen = false"
+    />
+
+    <!-- Main Content -->
+    <div class="lg:pl-64 min-h-screen flex flex-col">
+      <!-- Top bar -->
+      <header class="sticky top-0 z-30 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center gap-4">
+        <UButton
+          variant="ghost"
+          icon="i-heroicons-bars-3"
+          class="lg:hidden"
+          @click="sidebarOpen = !sidebarOpen"
+        />
+        <div class="flex-1" />
+        <UColorModeToggle />
+      </header>
+
+      <!-- Page Content -->
+      <main class="flex-1 p-6">
+        <slot />
+      </main>
+    </div>
+  </div>
+  </UApp>
+</template>
+
+<script setup lang="ts">
+const route = useRoute()
+const sidebarOpen = ref(false)
+
+const { data: unclassifiedCount } = await useFetch('/api/trips', {
+  params: { purpose: 'unclassified', limit: 1 },
+  transform: (data: any) => data?.total || 0,
+})
+
+const navItems = computed(() => [
+  { to: '/', label: 'Dashboard', icon: 'i-heroicons-home' },
+  {
+    to: '/trips',
+    label: 'Trips',
+    icon: 'i-heroicons-map',
+    badge: unclassifiedCount.value || undefined,
+  },
+  { to: '/vehicles', label: 'Vehicles', icon: 'i-heroicons-truck' },
+  { to: '/live', label: 'Live Data', icon: 'i-heroicons-signal' },
+  { to: '/export', label: 'Export', icon: 'i-heroicons-arrow-down-tray' },
+  { to: '/settings', label: 'Settings', icon: 'i-heroicons-cog-6-tooth' },
+])
+
+function isActive(path: string): boolean {
+  if (path === '/') return route.path === '/'
+  return route.path.startsWith(path)
+}
+
+watch(() => route.path, () => {
+  sidebarOpen.value = false
+})
+</script>
