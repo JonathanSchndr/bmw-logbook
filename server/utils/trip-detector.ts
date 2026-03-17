@@ -53,6 +53,31 @@ function haversineDistanceKm(lat1: number, lng1: number, lat2: number, lng2: num
   return haversineDistanceM(lat1, lng1, lat2, lng2) / 1000
 }
 
+function sampleWaypoints(waypoints: { lat: number; lng: number }[], maxCount: number) {
+  if (waypoints.length <= maxCount) return waypoints
+  const step = (waypoints.length - 1) / (maxCount - 1)
+  return Array.from({ length: maxCount }, (_, i) => waypoints[Math.round(i * step)]!)
+}
+
+async function refineDistanceFromOsrm(tripId: string, waypoints: { lat: number; lng: number }[]): Promise<void> {
+  try {
+    const sampled = sampleWaypoints(waypoints, 25)
+    const coords = sampled.map(p => `${p.lng},${p.lat}`).join(';')
+    const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'bmw-logbook/1.0', Accept: 'application/json' },
+    })
+    if (!response.ok) return
+    const data = await response.json() as any
+    if (!data.routes?.length) return
+    const distanceKm = Math.round((data.routes[0].distance / 1000) * 10) / 10
+    await TripModel.findByIdAndUpdate(tripId, { distanceKm })
+    console.log(`[TripDetector] OSRM road distance for trip ${tripId}: ${distanceKm}km`)
+  } catch (err) {
+    console.error('[TripDetector] OSRM distance refinement failed:', err)
+  }
+}
+
 async function endTrip(vin: string, state: VehicleState, endTime: Date): Promise<void> {
   if (!state.currentTripId) return
 
@@ -95,6 +120,11 @@ async function endTrip(vin: string, state: VehicleState, endTime: Date): Promise
 
     await trip.save()
     console.log(`[TripDetector] Trip ended for VIN ${vin}: ${trip._id}, distance: ${trip.distanceKm}km`)
+
+    // Refine distance using OSRM road distance in background
+    if (trip.waypoints.length > 1) {
+      refineDistanceFromOsrm(trip._id.toString(), trip.waypoints as { lat: number; lng: number }[])
+    }
   } catch (err) {
     console.error('[TripDetector] Error ending trip:', err)
   }

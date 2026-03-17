@@ -217,54 +217,20 @@ const { data, pending } = await useFetch<{ trip: Trip; rawEvents: any[] }>(`/api
 
 const showEvents = ref(false)
 
-// Route geometry from OSRM (road-following waypoints)
+// Road-snapped route from OSRM (calculated through GPS waypoints)
 const routeWaypoints = ref<{ lat: number; lng: number }[]>([])
-const geocodedStart = ref<{ lat: number; lng: number } | null>(null)
-const geocodedEnd = ref<{ lat: number; lng: number } | null>(null)
 
-// Prefer stored GPS waypoints, fall back to road-routed waypoints from addresses
-const mapWaypoints = computed(() =>
-  (data.value?.trip?.waypoints?.length ?? 0) > 1
-    ? data.value!.trip.waypoints
-    : routeWaypoints.value,
-)
-const mapStartLocation = computed(() =>
-  data.value?.trip?.startLocation || geocodedStart.value,
-)
-const mapEndLocation = computed(() =>
-  data.value?.trip?.endLocation || geocodedEnd.value,
-)
+const mapWaypoints = computed(() => routeWaypoints.value)
+const mapStartLocation = computed(() => data.value?.trip?.startLocation ?? null)
+const mapEndLocation = computed(() => data.value?.trip?.endLocation ?? null)
 
 async function fetchRouteForMap() {
   const trip = data.value?.trip
-  if (!trip) return
-
-  // If the trip already has real GPS waypoints, nothing to do
-  if ((trip.waypoints?.length ?? 0) > 1) return
-
-  // Need at least start+end to route
-  const startAddr = trip.startAddress
-  const endAddr = trip.endAddress
-  if (!startAddr || !endAddr) return
-
+  if (!trip?._id) return
   try {
-    // Geocode both addresses in parallel
-    const [fromRes, toRes] = await Promise.all([
-      $fetch<{ found: boolean; lat: number | null; lng: number | null }>(`/api/geocode?q=${encodeURIComponent(startAddr)}`),
-      $fetch<{ found: boolean; lat: number | null; lng: number | null }>(`/api/geocode?q=${encodeURIComponent(endAddr)}`),
-    ])
-
-    if (!fromRes?.found || !fromRes.lat || !toRes?.found || !toRes.lat) return
-
-    geocodedStart.value = { lat: fromRes.lat, lng: fromRes.lng! }
-    geocodedEnd.value = { lat: toRes.lat, lng: toRes.lng! }
-
-    // Fetch road route
-    const routeRes = await $fetch<{ distanceKm: number; waypoints: { lat: number; lng: number }[] }>(
-      `/api/route?fromLat=${fromRes.lat}&fromLng=${fromRes.lng}&toLat=${toRes.lat}&toLng=${toRes.lng}`,
-    )
-    routeWaypoints.value = routeRes.waypoints
-  } catch { /* silent */ }
+    const res = await $fetch<{ waypoints: { lat: number; lng: number }[] }>(`/api/trips/${trip._id}/route`)
+    routeWaypoints.value = res.waypoints
+  } catch { /* no route available — map shows markers only */ }
 }
 
 watch(() => data.value?.trip, (trip) => {
@@ -348,10 +314,6 @@ async function calculateDistance() {
         `/api/route?fromLat=${from.lat}&fromLng=${from.lng}&toLat=${to.lat}&toLng=${to.lng}`,
       )
       editForm.distanceKm = String(route.distanceKm)
-      // Update map with the routed waypoints
-      routeWaypoints.value = route.waypoints
-      geocodedStart.value = { lat: from.lat, lng: from.lng! }
-      geocodedEnd.value = { lat: to.lat, lng: to.lng! }
     } else {
       toast.add({ title: 'Could not geocode one or both addresses', color: 'yellow' })
     }

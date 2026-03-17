@@ -3,34 +3,42 @@
     class="cursor-pointer hover:shadow-md transition-shadow"
     @click="emit('click', trip)"
   >
-    <div class="flex items-start justify-between gap-4">
-      <div class="flex-1 min-w-0 space-y-1">
-        <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-          <span>{{ formatDate(trip.startTime) }}</span>
-          <span>{{ formatTime(trip.startTime) }}</span>
-          <span v-if="trip.endTime">– {{ formatTime(trip.endTime) }}</span>
+    <div class="space-y-2">
+      <!-- Top row: date/time + badge -->
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 min-w-0">
+          <span class="shrink-0">{{ formatDate(trip.startTime) }}</span>
+          <span class="shrink-0">{{ formatTime(trip.startTime) }}</span>
+          <span v-if="trip.endTime" class="shrink-0">– {{ formatTime(trip.endTime) }}</span>
         </div>
-        <div class="flex items-start gap-1 text-sm">
+        <UBadge :color="purposeColor" class="shrink-0">
+          {{ purposeLabel }}
+        </UBadge>
+      </div>
+
+      <!-- Addresses -->
+      <div class="space-y-0.5">
+        <div class="flex items-baseline gap-1.5 text-sm min-w-0">
+          <span class="text-gray-400 shrink-0 text-xs">From</span>
           <span class="font-medium text-gray-900 dark:text-white truncate">
             {{ trip.startAddress || 'Unknown departure' }}
           </span>
-          <span class="text-gray-400 flex-shrink-0">→</span>
+        </div>
+        <div class="flex items-baseline gap-1.5 text-sm min-w-0">
+          <span class="text-gray-400 shrink-0 text-xs">To</span>
           <span class="font-medium text-gray-900 dark:text-white truncate">
             {{ trip.endAddress || (trip.status === 'in_progress' ? 'In progress...' : 'Unknown destination') }}
           </span>
         </div>
+      </div>
+
+      <!-- Bottom row: meta + classify -->
+      <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
           <span v-if="trip.distanceKm">{{ trip.distanceKm.toFixed(1) }} km</span>
           <span v-if="trip.driver">{{ trip.driver }}</span>
-          <span v-if="trip.vin" class="font-mono">{{ trip.vin }}</span>
+          <span v-if="trip.vin" class="font-mono hidden sm:inline">{{ trip.vin }}</span>
         </div>
-      </div>
-
-      <div class="flex items-center gap-2 flex-shrink-0">
-        <UBadge :color="purposeColor">
-          {{ purposeLabel }}
-        </UBadge>
-
         <USelectMenu
           v-if="showClassify"
           v-model="selectedPurpose"
@@ -38,7 +46,7 @@
           value-key="value"
           size="xs"
           placeholder="Classify..."
-          class="w-36"
+          class="w-36 shrink-0"
           @update:model-value="handleClassify"
           @click.stop
         />
