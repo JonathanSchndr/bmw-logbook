@@ -35,25 +35,36 @@ export default defineEventHandler(async (event) => {
     headers: { 'User-Agent': 'bmw-logbook/1.0', Accept: 'application/json' },
   })
 
-  if (!response.ok) throw createError({ statusCode: 502, message: 'Routing service unavailable' })
-
-  const data = await response.json() as any
-
-  if (data.code !== 'Ok' || !data.matchings?.length) {
-    throw createError({ statusCode: 404, message: 'No route found' })
+  if (response.ok) {
+    const data = await response.json() as any
+    if (data.code === 'Ok' && data.matchings?.length) {
+      // Merge all matching segments (can be multiple if GPS trace has gaps)
+      const allCoords: [number, number][] = []
+      let totalDistance = 0
+      for (const matching of data.matchings) {
+        allCoords.push(...(matching.geometry.coordinates as [number, number][]))
+        totalDistance += matching.distance
+      }
+      return {
+        distanceKm: Math.round((totalDistance / 1000) * 10) / 10,
+        waypoints: allCoords.map(([lng, lat]) => ({ lat, lng })),
+      }
+    }
   }
 
-  // Merge all matching segments (can be multiple if GPS trace has gaps)
-  const allCoords: [number, number][] = []
-  let totalDistance = 0
-  for (const matching of data.matchings) {
-    const segCoords: [number, number][] = matching.geometry.coordinates
-    allCoords.push(...segCoords)
-    totalDistance += matching.distance
-  }
-
+  // Fallback: route directly from first to last point via OSRM route API
+  const first = gpsPoints[0]!
+  const last = gpsPoints[gpsPoints.length - 1]!
+  const fallbackUrl = `https://router.project-osrm.org/route/v1/driving/${first.lng},${first.lat};${last.lng},${last.lat}?overview=full&geometries=geojson`
+  const fallbackRes = await fetch(fallbackUrl, {
+    headers: { 'User-Agent': 'bmw-logbook/1.0', Accept: 'application/json' },
+  })
+  if (!fallbackRes.ok) throw createError({ statusCode: 502, message: 'Routing service unavailable' })
+  const fallbackData = await fallbackRes.json() as any
+  if (!fallbackData.routes?.length) throw createError({ statusCode: 404, message: 'No route found' })
+  const route = fallbackData.routes[0]
   return {
-    distanceKm: Math.round((totalDistance / 1000) * 10) / 10,
-    waypoints: allCoords.map(([lng, lat]) => ({ lat, lng })),
+    distanceKm: Math.round((route.distance / 1000) * 10) / 10,
+    waypoints: (route.geometry.coordinates as [number, number][]).map(([lng, lat]) => ({ lat, lng })),
   }
 })
