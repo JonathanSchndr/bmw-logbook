@@ -61,16 +61,20 @@ function sampleWaypoints(waypoints: { lat: number; lng: number }[], maxCount: nu
 
 async function refineDistanceFromOsrm(tripId: string, waypoints: { lat: number; lng: number }[]): Promise<void> {
   try {
-    const sampled = sampleWaypoints(waypoints, 25)
+    const sampled = sampleWaypoints(waypoints, 50)
     const coords = sampled.map(p => `${p.lng},${p.lat}`).join(';')
-    const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`
+    const url = `https://router.project-osrm.org/match/v1/driving/${coords}?overview=false&tidy=true`
     const response = await fetch(url, {
       headers: { 'User-Agent': 'bmw-logbook/1.0', Accept: 'application/json' },
     })
-    if (!response.ok) return
+    if (!response.ok) {
+      console.warn(`[TripDetector] OSRM match returned ${response.status}, keeping GPS distance`)
+      return
+    }
     const data = await response.json() as any
-    if (!data.routes?.length) return
-    const distanceKm = Math.round((data.routes[0].distance / 1000) * 10) / 10
+    if (data.code !== 'Ok' || !data.matchings?.length) return
+    const totalDistance = data.matchings.reduce((sum: number, m: any) => sum + m.distance, 0)
+    const distanceKm = Math.round((totalDistance / 1000) * 10) / 10
     await TripModel.findByIdAndUpdate(tripId, { distanceKm })
     console.log(`[TripDetector] OSRM road distance for trip ${tripId}: ${distanceKm}km`)
   } catch (err) {

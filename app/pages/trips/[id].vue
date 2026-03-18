@@ -228,8 +228,12 @@ async function fetchRouteForMap() {
   const trip = data.value?.trip
   if (!trip?._id) return
   try {
-    const res = await $fetch<{ waypoints: { lat: number; lng: number }[] }>(`/api/trips/${trip._id}/route`)
+    const res = await $fetch<{ distanceKm: number; waypoints: { lat: number; lng: number }[] }>(`/api/trips/${trip._id}/route`)
     routeWaypoints.value = res.waypoints
+    // Update the displayed distance with the road distance from OSRM
+    if (res.distanceKm && res.distanceKm > 0) {
+      editForm.distanceKm = String(res.distanceKm)
+    }
   } catch { /* no route available — map shows markers only */ }
 }
 

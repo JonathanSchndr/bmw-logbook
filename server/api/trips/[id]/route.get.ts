@@ -1,7 +1,6 @@
 import { connectDB } from '../../../utils/db'
 import { TripModel } from '../../../models/Trip'
 
-// Sample waypoints evenly down to maxCount to avoid OSRM URL limits
 function sampleWaypoints(waypoints: { lat: number; lng: number }[], maxCount: number) {
   if (waypoints.length <= maxCount) return waypoints
   const step = (waypoints.length - 1) / (maxCount - 1)
@@ -24,11 +23,13 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 422, message: 'Not enough waypoints to route' })
   }
 
-  // Sample to max 25 points for OSRM
-  const sampled = sampleWaypoints(gpsPoints, 25)
-
+  // Sample to max 50 points — more points = better map-matching result
+  const sampled = sampleWaypoints(gpsPoints, 50)
   const coords = sampled.map(p => `${p.lng},${p.lat}`).join(';')
-  const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`
+
+  // Use OSRM map-matching API — snaps GPS trace to roads using HMM
+  // tidy=true removes outlier points automatically
+  const url = `https://router.project-osrm.org/match/v1/driving/${coords}?overview=full&geometries=geojson&tidy=true`
 
   const response = await fetch(url, {
     headers: { 'User-Agent': 'bmw-logbook/1.0', Accept: 'application/json' },
@@ -37,13 +38,22 @@ export default defineEventHandler(async (event) => {
   if (!response.ok) throw createError({ statusCode: 502, message: 'Routing service unavailable' })
 
   const data = await response.json() as any
-  if (!data.routes?.length) throw createError({ statusCode: 404, message: 'No route found' })
 
-  const route = data.routes[0]
-  const routeCoords: [number, number][] = route.geometry.coordinates // [lng, lat]
+  if (data.code !== 'Ok' || !data.matchings?.length) {
+    throw createError({ statusCode: 404, message: 'No route found' })
+  }
+
+  // Merge all matching segments (can be multiple if GPS trace has gaps)
+  const allCoords: [number, number][] = []
+  let totalDistance = 0
+  for (const matching of data.matchings) {
+    const segCoords: [number, number][] = matching.geometry.coordinates
+    allCoords.push(...segCoords)
+    totalDistance += matching.distance
+  }
 
   return {
-    distanceKm: Math.round((route.distance / 1000) * 10) / 10,
-    waypoints: routeCoords.map(([lng, lat]) => ({ lat, lng })),
+    distanceKm: Math.round((totalDistance / 1000) * 10) / 10,
+    waypoints: allCoords.map(([lng, lat]) => ({ lat, lng })),
   }
 })
