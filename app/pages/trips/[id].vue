@@ -220,7 +220,12 @@ const showEvents = ref(false)
 // Road-snapped route from OSRM (calculated through GPS waypoints)
 const routeWaypoints = ref<{ lat: number; lng: number }[]>([])
 
-const mapWaypoints = computed(() => routeWaypoints.value)
+// Prefer OSRM road route, fall back to raw GPS waypoints so map never shows dashed line
+const mapWaypoints = computed(() =>
+  routeWaypoints.value.length > 1
+    ? routeWaypoints.value
+    : (data.value?.trip?.waypoints ?? []),
+)
 const mapStartLocation = computed(() => data.value?.trip?.startLocation ?? null)
 const mapEndLocation = computed(() => data.value?.trip?.endLocation ?? null)
 
@@ -234,7 +239,7 @@ async function fetchRouteForMap() {
     if (res.distanceKm && res.distanceKm > 0) {
       editForm.distanceKm = String(res.distanceKm)
     }
-  } catch { /* no route available — map shows markers only */ }
+  } catch { /* OSRM unavailable — mapWaypoints falls back to raw GPS points */ }
 }
 
 watch(() => data.value?.trip, (trip) => {
