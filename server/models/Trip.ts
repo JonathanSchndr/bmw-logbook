@@ -19,8 +19,6 @@ export interface ITrip extends Document {
   endLocation: { lat: number; lng: number } | null
   waypoints: IWaypoint[]
   purpose: 'business' | 'private' | 'unclassified'
-  businessDestination: string
-  businessContact: string
   notes: string
   driver: string
   status: 'in_progress' | 'completed' | 'manual'
@@ -61,8 +59,6 @@ const TripSchema = new Schema<ITrip>(
       enum: ['business', 'private', 'unclassified'],
       default: 'unclassified',
     },
-    businessDestination: { type: String, default: '' },
-    businessContact: { type: String, default: '' },
     notes: { type: String, default: '' },
     driver: { type: String, default: '' },
     status: {

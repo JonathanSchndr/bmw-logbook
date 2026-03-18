@@ -10,8 +10,6 @@ export default defineEventHandler(async (event) => {
 
     const body = await readBody(event) as {
       purpose?: string
-      businessDestination?: string
-      businessContact?: string
       notes?: string
       driver?: string
       startAddress?: string
@@ -27,8 +25,6 @@ export default defineEventHandler(async (event) => {
     if (!trip) throw createError({ statusCode: 404, message: 'Trip not found' })
 
     if (body.purpose !== undefined) trip.purpose = body.purpose as any
-    if (body.businessDestination !== undefined) trip.businessDestination = body.businessDestination
-    if (body.businessContact !== undefined) trip.businessContact = body.businessContact
     if (body.notes !== undefined) trip.notes = body.notes
     if (body.driver !== undefined) trip.driver = body.driver
     if (body.startAddress !== undefined) trip.startAddress = body.startAddress
