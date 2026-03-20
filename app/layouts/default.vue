@@ -34,7 +34,7 @@
             v-if="item.badge"
             :label="String(item.badge)"
             size="xs"
-            color="red"
+            color="error"
             class="ml-auto"
           />
         </NuxtLink>

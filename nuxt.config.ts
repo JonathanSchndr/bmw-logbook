@@ -43,6 +43,7 @@ export default defineNuxtConfig({
     },
   },
 
+  // @ts-expect-error pwa is augmented by @vite-pwa/nuxt
   pwa: {
     registerType: 'autoUpdate',
     manifest: {
