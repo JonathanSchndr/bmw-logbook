@@ -23,8 +23,16 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 422, message: 'Not enough waypoints to route' })
   }
 
+  // Deduplicate consecutive identical coordinates (parked GPS noise → OSRM 400)
+  const deduped = gpsPoints.filter((p, i) =>
+    i === 0 || p.lat !== gpsPoints[i - 1]!.lat || p.lng !== gpsPoints[i - 1]!.lng,
+  )
+  if (deduped.length < 2) {
+    throw createError({ statusCode: 422, message: 'Not enough distinct waypoints to route' })
+  }
+
   // Sample to max 50 points — more points = better map-matching result
-  const sampled = sampleWaypoints(gpsPoints, 50)
+  const sampled = sampleWaypoints(deduped, 50)
   const coords = sampled.map(p => `${p.lng},${p.lat}`).join(';')
 
   // Use OSRM map-matching API — snaps GPS trace to roads using HMM

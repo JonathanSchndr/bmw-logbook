@@ -136,7 +136,7 @@
             </UFormField>
 
             <div class="flex justify-between items-center pt-2">
-              <UButton color="red" variant="ghost" size="sm" icon="i-heroicons-trash" @click="confirmDelete">
+              <UButton color="error" variant="ghost" size="sm" icon="i-heroicons-trash" @click="confirmDelete">
                 Delete
               </UButton>
               <UButton type="submit" :loading="saving">
@@ -153,7 +153,7 @@
           <button class="flex items-center justify-between w-full" @click="showEvents = !showEvents">
             <h3 class="font-semibold text-gray-900 dark:text-white">Event timeline</h3>
             <div class="flex items-center gap-2">
-              <UBadge color="gray" size="sm">{{ data.rawEvents.length }} events</UBadge>
+              <UBadge color="neutral" size="sm">{{ data.rawEvents.length }} events</UBadge>
               <UIcon :name="showEvents ? 'i-heroicons-chevron-up' : 'i-heroicons-chevron-down'" class="h-4 w-4 text-gray-400" />
             </div>
           </button>
@@ -196,7 +196,7 @@
           <template #footer>
             <div class="flex justify-end gap-3">
               <UButton variant="ghost" @click="showDeleteModal = false">Cancel</UButton>
-              <UButton color="red" :loading="deleting" @click="deleteTrip">Delete</UButton>
+              <UButton color="error" :loading="deleting" @click="deleteTrip">Delete</UButton>
             </div>
           </template>
         </UCard>
@@ -324,10 +324,10 @@ async function calculateDistance() {
       )
       editForm.distanceKm = String(route.distanceKm)
     } else {
-      toast.add({ title: 'Could not geocode one or both addresses', color: 'yellow' })
+      toast.add({ title: 'Could not geocode one or both addresses', color: 'warning' })
     }
   } catch {
-    toast.add({ title: 'Distance calculation failed', color: 'red' })
+    toast.add({ title: 'Distance calculation failed', color: 'error' })
   } finally {
     calculatingDistance.value = false
   }
@@ -349,9 +349,9 @@ async function saveTrip() {
         notes: editForm.notes,
       },
     })
-    toast.add({ title: 'Saved', icon: 'i-heroicons-check', color: 'green' })
+    toast.add({ title: 'Saved', icon: 'i-heroicons-check', color: 'success' })
   } catch (err: any) {
-    toast.add({ title: 'Error: ' + err.message, color: 'red' })
+    toast.add({ title: 'Error: ' + err.message, color: 'error' })
   } finally {
     saving.value = false
   }
@@ -368,10 +368,10 @@ async function deleteTrip() {
   deleting.value = true
   try {
     await $fetch(`/api/trips/${id}`, { method: 'DELETE' as any })
-    toast.add({ title: 'Trip deleted', color: 'green' })
+    toast.add({ title: 'Trip deleted', color: 'success' })
     await router.push('/trips')
   } catch (err: any) {
-    toast.add({ title: 'Error: ' + err.message, color: 'red' })
+    toast.add({ title: 'Error: ' + err.message, color: 'error' })
   } finally {
     deleting.value = false
     showDeleteModal.value = false

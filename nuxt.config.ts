@@ -4,6 +4,7 @@ export default defineNuxtConfig({
   modules: [
     '@nuxt/ui',
     '@vueuse/nuxt',
+    '@vite-pwa/nuxt',
   ],
 
   css: ['~/assets/css/main.css'],
@@ -39,6 +40,40 @@ export default defineNuxtConfig({
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
       ],
+    },
+  },
+
+  pwa: {
+    registerType: 'autoUpdate',
+    manifest: {
+      name: 'BMW Logbook',
+      short_name: 'BMW Log',
+      description: 'Digital driving logbook for BMW vehicles — Finanzamt compliant',
+      theme_color: '#1d4ed8',
+      background_color: '#f9fafb',
+      display: 'standalone',
+      start_url: '/',
+      icons: [
+        {
+          src: '/favicon.svg',
+          sizes: 'any',
+          type: 'image/svg+xml',
+          purpose: 'any maskable',
+        },
+      ],
+    },
+    workbox: {
+      navigateFallback: null,
+      runtimeCaching: [
+        {
+          urlPattern: /^\/api\//,
+          handler: 'NetworkFirst',
+          options: { cacheName: 'api-cache', expiration: { maxEntries: 100, maxAgeSeconds: 60 * 5 } },
+        },
+      ],
+    },
+    devOptions: {
+      enabled: false,
     },
   },
 

@@ -77,8 +77,29 @@
         />
       </header>
 
+      <!-- Pull-to-refresh indicator -->
+      <div
+        v-if="pullDistance > 0 || refreshing"
+        class="fixed top-14 left-0 right-0 lg:left-64 flex justify-center pointer-events-none z-40"
+        :style="{ transform: `translateY(${Math.min(pullDistance, PULL_THRESHOLD) - PULL_THRESHOLD}px)` }"
+      >
+        <div class="bg-white dark:bg-gray-800 rounded-full p-2 shadow-lg">
+          <UIcon
+            name="i-heroicons-arrow-path"
+            class="h-5 w-5 text-blue-600"
+            :class="{ 'animate-spin': refreshing }"
+            :style="!refreshing ? { transform: `rotate(${Math.min((pullDistance / PULL_THRESHOLD) * 180, 180)}deg)` } : {}"
+          />
+        </div>
+      </div>
+
       <!-- Page Content -->
-      <main class="flex-1 p-6">
+      <main
+        class="flex-1 p-6"
+        @touchstart.passive="onTouchStart"
+        @touchmove.passive="onTouchMove"
+        @touchend.passive="onTouchEnd"
+      >
         <slot />
       </main>
     </div>
@@ -126,4 +147,38 @@ function isActive(path: string): boolean {
 watch(() => route.path, () => {
   sidebarOpen.value = false
 })
+
+// Pull-to-refresh
+const PULL_THRESHOLD = 80
+const touchStartY = ref(0)
+const pullDistance = ref(0)
+const refreshing = ref(false)
+
+function onTouchStart(e: TouchEvent) {
+  if (window.scrollY === 0) {
+    touchStartY.value = e.touches[0]!.clientY
+  }
+}
+
+function onTouchMove(e: TouchEvent) {
+  if (touchStartY.value === 0) return
+  const delta = e.touches[0]!.clientY - touchStartY.value
+  if (delta > 0 && window.scrollY === 0) {
+    pullDistance.value = delta
+  }
+}
+
+async function onTouchEnd() {
+  if (pullDistance.value >= PULL_THRESHOLD && !refreshing.value) {
+    refreshing.value = true
+    pullDistance.value = PULL_THRESHOLD
+    try {
+      await refreshNuxtData()
+    } finally {
+      refreshing.value = false
+    }
+  }
+  pullDistance.value = 0
+  touchStartY.value = 0
+}
 </script>

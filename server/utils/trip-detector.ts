@@ -18,6 +18,9 @@ interface VehicleState {
 
 const vehicleStates = new Map<string, VehicleState>()
 
+// Per-VIN mutex: prevents two concurrent GPS events from both creating a trip
+const creatingTrip = new Set<string>()
+
 function getState(vin: string): VehicleState {
   if (!vehicleStates.has(vin)) {
     vehicleStates.set(vin, {
@@ -61,7 +64,12 @@ function sampleWaypoints(waypoints: { lat: number; lng: number }[], maxCount: nu
 
 async function refineDistanceFromOsrm(tripId: string, waypoints: { lat: number; lng: number }[]): Promise<void> {
   try {
-    const sampled = sampleWaypoints(waypoints, 50)
+    // Remove consecutive duplicate coordinates (parked car GPS noise causes OSRM 400)
+    const deduped = waypoints.filter((p, i) =>
+      i === 0 || p.lat !== waypoints[i - 1]!.lat || p.lng !== waypoints[i - 1]!.lng,
+    )
+    if (deduped.length < 2) return
+    const sampled = sampleWaypoints(deduped, 50)
     const coords = sampled.map(p => `${p.lng},${p.lat}`).join(';')
     const url = `https://router.project-osrm.org/match/v1/driving/${coords}?overview=false&tidy=true`
     const response = await fetch(url, {
@@ -218,8 +226,9 @@ export async function processEvent(
   state.lastLat = currentLat
   state.lastLng = currentLng
 
-  if (!state.currentTripId) {
+  if (!state.currentTripId && !creatingTrip.has(vin)) {
     // Start a new trip on first real movement
+    creatingTrip.add(vin)
     try {
       const { SettingsModel } = await import('../models/Settings')
       const settings = await SettingsModel.findOne().lean()
@@ -244,8 +253,10 @@ export async function processEvent(
       console.log(`[TripDetector] Trip started for VIN ${vin}: ${trip._id}`)
     } catch (err) {
       console.error('[TripDetector] Error creating trip:', err)
+    } finally {
+      creatingTrip.delete(vin)
     }
-  } else {
+  } else if (state.currentTripId) {
     // Add every GPS point as waypoint during active trip
     try {
       const trip = await TripModel.findById(state.currentTripId)
