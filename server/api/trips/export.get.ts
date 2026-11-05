@@ -1,12 +1,17 @@
 import { connectDB } from '../../utils/db'
 import { TripModel } from '../../models/Trip'
 import { VehicleModel } from '../../models/Vehicle'
+import { tzLocalMidnightUTC } from '../../utils/timezone'
+
+const config = useRuntimeConfig()
+const tz = config.timezone
 
 function formatDate(d: Date): string {
   return d.toLocaleDateString('en-US', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
+    timeZone: tz,
   })
 }
 
@@ -17,6 +22,7 @@ function formatDateTime(d: Date): string {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: tz,
   })
 }
 
@@ -50,8 +56,8 @@ export default defineEventHandler(async (event) => {
     if (query.year) {
       year = parseInt(query.year)
       filter.startTime = {
-        $gte: new Date(year, 0, 1),
-        $lt: new Date(year + 1, 0, 1),
+        $gte: tzLocalMidnightUTC(year, 0, 1, tz),
+        $lt: tzLocalMidnightUTC(year + 1, 0, 1, tz),
       }
     }
 
@@ -88,8 +94,8 @@ export default defineEventHandler(async (event) => {
 
       const rows = trips.map((t) => [
         formatDate(new Date(t.startTime)),
-        new Date(t.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-        t.endTime ? new Date(t.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '',
+        new Date(t.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz }),
+        t.endTime ? new Date(t.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz }) : '',
         vehicle?.licensePlate || vin || '',
         vehicle ? `${vehicle.make} ${vehicle.model}` : '',
         t.vin,
@@ -204,8 +210,8 @@ export default defineEventHandler(async (event) => {
       <tr>
         <td>${i + 1}</td>
         <td>${formatDate(new Date(t.startTime))}</td>
-        <td>${new Date(t.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</td>
-        <td>${t.endTime ? new Date(t.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '–'}</td>
+        <td>${new Date(t.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz })}</td>
+        <td>${t.endTime ? new Date(t.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz }) : '–'}</td>
         <td>${t.startAddress || '–'}</td>
         <td>${t.endAddress || '–'}</td>
         <td>${(t.distanceKm || 0).toFixed(1)}</td>

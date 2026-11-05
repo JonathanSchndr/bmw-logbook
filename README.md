@@ -49,7 +49,7 @@ cd bmw-logbook
 
 pnpm install
 cp .env.example .env
-# Set MONGODB_URI and NUXT_SESSION_SECRET in .env
+# Set MONGODB_URI, NUXT_SESSION_SECRET and APP_TIMEZONE in .env
 
 pnpm build
 pnpm preview
