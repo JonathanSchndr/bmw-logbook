@@ -413,12 +413,20 @@ async function submitAddTrip() {
   }
   addingTrip.value = true
   try {
+    // datetime-local Inputs liefern zeitzonenlose Strings (z. B. "2026-11-05T10:00").
+    // new Date(...) interpretiert solche Strings als lokale Zeit des ausführenden Systems,
+    // wodurch Client und Server bei abweichender Zeitzone um eine Stunde versetzt speichern.
+    // Daher hier explizit in UTC umwandeln, sodass der vom Nutzer gewählte Augenblick
+    // eindeutig gespeichert und in der Anzeige wieder in Lokalzeit gezeigt wird.
+    const startTime = new Date(newTrip.startTime).toISOString()
+    const endTime = newTrip.endTime ? new Date(newTrip.endTime).toISOString() : undefined
+
     await $fetch('/api/trips', {
       method: 'POST',
       body: {
         vin: newTrip.vin,
-        startTime: newTrip.startTime,
-        endTime: newTrip.endTime || undefined,
+        startTime,
+        endTime,
         startAddress: newTrip.startAddress,
         endAddress: newTrip.endAddress,
         distanceKm: newTrip.distanceKm ? parseFloat(newTrip.distanceKm) : 0,

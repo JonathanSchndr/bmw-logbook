@@ -1,5 +1,6 @@
 import { connectDB } from '../../utils/db'
 import { TripModel } from '../../models/Trip'
+import { tzLocalMidnightUTC, tzCurrentYearMonth } from '../../utils/timezone'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -11,12 +12,14 @@ export default defineEventHandler(async (event) => {
 
     if (query.vin) filter.vin = query.vin.toUpperCase()
 
+    const tz = useRuntimeConfig().timezone as string
+
     let year: number | null = null
     if (query.year) {
       year = parseInt(query.year)
       filter.startTime = {
-        $gte: new Date(year, 0, 1),
-        $lt: new Date(year + 1, 0, 1),
+        $gte: tzLocalMidnightUTC(year, 0, 1, tz),
+        $lt: tzLocalMidnightUTC(year + 1, 0, 1, tz),
       }
     }
 
@@ -33,8 +36,8 @@ export default defineEventHandler(async (event) => {
     const unclassifiedTrips = trips.filter(t => t.purpose === 'unclassified').length
     const avgTripKm = totalTrips > 0 ? totalKm / totalTrips : 0
 
-    const now = new Date()
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    const { year: curYear, month: curMonth } = tzCurrentYearMonth(tz)
+    const monthStart = tzLocalMidnightUTC(curYear, curMonth, 1, tz)
     const tripsThisMonth = trips.filter(t => new Date(t.startTime) >= monthStart)
     const thisMonthKm = tripsThisMonth.reduce((sum, t) => sum + (t.distanceKm || 0), 0)
 

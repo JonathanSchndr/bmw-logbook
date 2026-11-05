@@ -12,6 +12,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     mongodbUri: process.env.MONGODB_URI || 'mongodb://localhost:27017/bmw-logbook',
     sessionSecret: process.env.NUXT_SESSION_SECRET || 'change-this-to-random-string-min-32-chars',
+    timezone: process.env.APP_TIMEZONE || 'Europe/Berlin',
     public: {
       appName: 'BMW Logbook',
     },

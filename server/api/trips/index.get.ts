@@ -1,5 +1,6 @@
 import { connectDB } from '../../utils/db'
 import { TripModel } from '../../models/Trip'
+import { tzLocalMidnightUTC } from '../../utils/timezone'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -21,18 +22,20 @@ export default defineEventHandler(async (event) => {
     if (query.purpose) filter.purpose = query.purpose
     if (query.status) filter.status = query.status
 
+    const tz = useRuntimeConfig().timezone as string
+
     if (query.year) {
       const year = parseInt(query.year)
-      const start = new Date(year, 0, 1)
-      const end = new Date(year + 1, 0, 1)
+      const start = tzLocalMidnightUTC(year, 0, 1, tz)
+      const end = tzLocalMidnightUTC(year + 1, 0, 1, tz)
       filter.startTime = { $gte: start, $lt: end }
     }
 
     if (query.month && query.year) {
       const year = parseInt(query.year)
       const month = parseInt(query.month) - 1 // 0-indexed
-      const start = new Date(year, month, 1)
-      const end = new Date(year, month + 1, 1)
+      const start = tzLocalMidnightUTC(year, month, 1, tz)
+      const end = tzLocalMidnightUTC(year, month + 1, 1, tz)
       filter.startTime = { $gte: start, $lt: end }
     }
 
