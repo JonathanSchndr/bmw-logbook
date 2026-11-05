@@ -134,7 +134,7 @@ async function endTrip(vin: string, state: VehicleState, endTime: Date): Promise
     console.log(`[TripDetector] Trip ended for VIN ${vin}: ${trip._id}, distance: ${trip.distanceKm}km`)
 
     // Refine distance using OSRM road distance in background
-    if (trip.waypoints.length > 1) {
+    if (trip.distanceKm === 0 && trip.waypoints.length > 1) {
       refineDistanceFromOsrm(trip._id.toString(), trip.waypoints as { lat: number; lng: number }[])
     }
   } catch (err) {
