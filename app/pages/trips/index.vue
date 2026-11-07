@@ -132,7 +132,7 @@
 
     <!-- Pagination -->
     <div v-if="pages > 1" class="flex justify-center">
-      <UPagination v-model="currentPage" :total="total" :page-count="perPage" :max="7" />
+      <UPagination v-model:page="currentPage" :total="total" :items-per-page="perPage" :sibling-count="3" />
     </div>
 
     <!-- Add Trip Modal -->
@@ -222,12 +222,12 @@ const vehicleOptionsRequired = computed(() =>
 )
 
 const currentYear = new Date().getFullYear()
-const filters = reactive({
+const filters = useState('trips-filters', () => ({
   vin: undefined as string | undefined,
   year: String(currentYear),
   month: undefined as string | undefined,
   purpose: undefined as string | undefined,
-})
+}))
 
 const yearOptions = Array.from({ length: 5 }, (_, i) => ({
   label: String(currentYear - i),
@@ -268,7 +268,7 @@ function clearFilters() {
   filters.year = String(currentYear)
 }
 
-const currentPage = ref(1)
+const currentPage = useState('trips-page', () => 1)
 const perPage = 20
 const trips = ref<Trip[]>([])
 const total = ref(0)
