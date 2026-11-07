@@ -258,14 +258,14 @@ const purposeOptions = [
 ]
 
 const hasActiveFilters = computed(() =>
-  filters.vin || filters.month || filters.purpose || filters.year !== String(currentYear),
+  filters.value.vin || filters.value.month || filters.value.purpose || filters.value.year !== String(currentYear),
 )
 
 function clearFilters() {
-  filters.vin = undefined
-  filters.month = undefined
-  filters.purpose = undefined
-  filters.year = String(currentYear)
+  filters.value.vin = undefined
+  filters.value.month = undefined
+  filters.value.purpose = undefined
+  filters.value.year = String(currentYear)
 }
 
 const currentPage = useState('trips-page', () => 1)
@@ -282,10 +282,10 @@ async function loadTrips() {
       page: String(currentPage.value),
       limit: String(perPage),
     }
-    if (filters.vin) params.vin = filters.vin
-    if (filters.year) params.year = filters.year
-    if (filters.month) params.month = filters.month
-    if (filters.purpose) params.purpose = filters.purpose
+    if (filters.value.vin) params.vin = filters.vin
+    if (filters.value.year) params.year = filters.year
+    if (filters.value.month) params.month = filters.month
+    if (filters.value.purpose) params.purpose = filters.purpose
 
     const result = await $fetch<{ trips: Trip[]; total: number; pages: number }>('/api/trips', { params })
     trips.value = result.trips
