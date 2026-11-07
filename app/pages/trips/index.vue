@@ -282,10 +282,10 @@ async function loadTrips() {
       page: String(currentPage.value),
       limit: String(perPage),
     }
-    if (filters.value.vin) params.vin = filters.vin
-    if (filters.value.year) params.year = filters.year
-    if (filters.value.month) params.month = filters.month
-    if (filters.value.purpose) params.purpose = filters.purpose
+    if (filters.value.vin) params.vin = filters.value.vin
+    if (filters.value.year) params.year = filters.value.year
+    if (filters.value.month) params.month = filters.value.month
+    if (filters.value.purpose) params.purpose = filters.value.purpose
 
     const result = await $fetch<{ trips: Trip[]; total: number; pages: number }>('/api/trips', { params })
     trips.value = result.trips
